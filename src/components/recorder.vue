@@ -62,6 +62,12 @@
         right: -52px;
       }
 
+      &__upload {
+        position: absolute;
+        top: 10px;
+        right: 65px;
+      }
+
       &__time-limit {
         position: absolute;
         color: #AEAEAE;
@@ -192,6 +198,11 @@
 
     <div class="ar-content" :class="{'ar__blur': isUploading}">
       <div class="ar-recorder">
+        <input type="file" ref="file" accept="audio/wav, audio/mpeg" style="display: none" @change="onFileChange">
+        <icon-button
+          class="ar-icon ar-icon__sm ar-recorder__upload"
+          name="upload"
+          @click.native="$refs.file.click()"/>
         <icon-button
           class="ar-icon ar-icon__lg"
           :name="iconButtonType"
@@ -206,9 +217,9 @@
           @click.native="stopRecorder"/>
       </div>
 
-      <div class="ar-recorder__records-limit" v-if="attempts">Attempts: {{attemptsLeft}}/{{attempts}}</div>
+      <div class="ar-recorder__records-limit" v-if="attempts">レコード数: {{attemptsLeft}}/{{attempts}}</div>
       <div class="ar-recorder__duration">{{recordedTime}}</div>
-      <div class="ar-recorder__time-limit" v-if="time">Record duration is limited: {{time}}m</div>
+      <div class="ar-recorder__time-limit" v-if="time">記録期間の最大: {{time}}分</div>
 
       <div class="ar-records">
         <div
@@ -221,7 +232,7 @@
               class="ar__rm"
               v-if="record.id === selected.id"
               @click="removeRecord(idx)">&times;</div>
-            <div class="ar__text">Record {{idx + 1}}</div>
+            <div class="ar__text">レコード {{idx + 1}}</div>
             <div class="ar__text">{{record.duration}}</div>
 
             <downloader
@@ -310,6 +321,17 @@
       this.stopRecorder()
     },
     methods: {
+      onFileChange(event) {
+        if (this.attempts && this.recorder.records.length >= this.attempts) {
+          return
+        }
+        if(event.target.files.length>0){
+          debugger
+          const record = { url: URL.createObjectURL(event.target.files[0]), blob:  event.target.files[0]};
+          this.recordList.push(record);
+          this.$refs.file.value=null;
+        }
+      },
       toggleRecorder () {
         if (this.attempts && this.recorder.records.length >= this.attempts) {
           return
@@ -327,7 +349,7 @@
         }
 
         this.recorder.stop()
-        this.recordList = this.recorder.recordList()
+        this.recordList = [...this.recordList, this.recorder.recordList().slice(-1)[0]]
       },
       removeRecord (idx) {
         this.recordList.splice(idx, 1)
